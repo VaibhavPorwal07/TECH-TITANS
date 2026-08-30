@@ -19,7 +19,6 @@ A low-cost **IoT-based environmental monitoring system** built using **ESP32**, 
 * 2 × Audio/Noise Sensors
 * 2 × Temperature Sensors
 * Jumper wires
-* Breadboard
 * USB cables / Power supply
 
 ## Software & Technologies
