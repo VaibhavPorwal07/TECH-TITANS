@@ -58,6 +58,7 @@ This prototype can be developed into a complete **smart-city environmental monit
 ## Project
 
 Developed as a prototype for **Smart India Hackathon / IoT-based Environmental Monitoring**.
+since we had verey less sensor data we ran 2ml models one with a public data set Dataset of Indoor Air Pollutants using Low-Cost Sensors and 1 we ran on our own data set.
 
 > **Goal:** Build an affordable, scalable and real-time sensing system that can help monitor environmental conditions and support data-driven decision making.
 > <img width="1882" height="862" alt="image" src="https://github.com/user-attachments/assets/90d5bf82-4691-494c-94d5-eefa076d0ac0" />
