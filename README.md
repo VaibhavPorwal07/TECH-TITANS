@@ -89,3 +89,6 @@ This prototype can be developed into a complete **smart-city environmental monit
 Developed as a prototype for **Smart India Hackathon / IoT-based Environmental Monitoring**.
 
 > **Goal:** Build an affordable, scalable and real-time sensing system that can help monitor environmental conditions and support data-driven decision making.
+> <img width="1882" height="862" alt="image" src="https://github.com/user-attachments/assets/90d5bf82-4691-494c-94d5-eefa076d0ac0" />
+
+
