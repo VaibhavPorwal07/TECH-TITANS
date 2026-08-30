@@ -12,34 +12,6 @@ A low-cost **IoT-based environmental monitoring system** built using **ESP32**, 
 * ⚡ Low-cost and scalable architecture
 * 🔍 Helps identify environmental changes and abnormal conditions
 
-## System Architecture
-
-```text
- ┌──────────────────────┐
- │    Sensor Node 1     │
- │  ESP32 + Audio + Temp│
- └──────────┬───────────┘
-            │
-            │ Wireless
-            ▼
- ┌──────────────────────┐
- │    Sensor Node 2     │
- │  ESP32 + Audio + Temp│
- └──────────┬───────────┘
-            │
-            │
-            ▼
- ┌──────────────────────┐
- │    Gateway ESP32     │
- │ Data Collection Unit │
- └──────────┬───────────┘
-            │
-            ▼
- ┌──────────────────────┐
- │ Dashboard / Display  │
- │ Noise + Temperature  │
- └──────────────────────┘
-```
 
 ## Hardware Used
 
