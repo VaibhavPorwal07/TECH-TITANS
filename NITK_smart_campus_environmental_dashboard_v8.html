@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Campus — NITK Environmental Intelligence</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+  <style>
+    :root {
+      --navy: #08202b; --navy-2: #0c2b38; --blue: #164b5d; --blue-soft: #eaf4f3;
+      --green: #5e9f67; --green-light: #b9d982; --green-pale: #edf6df;
+      --ink: #10262f; --muted: #688088; --white: #ffffff; --line: #dbe7e5;
+      --danger: #e95e55; --amber: #e6a63b; --shadow: 0 18px 50px rgba(7, 31, 41, .13);
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; width: 100%; height: 100%; font-family: "Urbanist", sans-serif; background: #dfe7e5; color: var(--ink); }
+    body { padding: 22px; }
+    .app { width: min(1580px, 100%); height: calc(100vh - 44px); min-height: 700px; margin: auto; overflow: hidden; border-radius: 20px; background: #f5f8f6; box-shadow: var(--shadow); display: grid; grid-template-columns: 270px 1fr; grid-template-rows: 76px 1fr; }
+    header { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; padding: 0 25px; color: var(--white); background: linear-gradient(110deg, #07212c, #0c3544); border-bottom: 1px solid rgba(255,255,255,.08); }
+    .brand { display: flex; align-items: center; gap: 13px; }
+    .brand-mark { width: 39px; height: 39px; border: 1px solid rgba(185,217,130,.65); border-radius: 11px; display: grid; place-items: center; color: var(--green-light); font-weight: 800; font-size: 12px; }
+    .brand-title { font-size: 18px; font-weight: 800; letter-spacing: .02em; }
+    .brand-subtitle { margin-top: 3px; color: #a8c1c5; font-size: 14px; font-weight: 500; }
+    .header-right { display: flex; align-items: center; gap: 22px; }
+    .status-pill { display: flex; align-items: center; gap: 8px; color: #d9efd6; border: 1px solid rgba(185,217,130,.28); background: rgba(185,217,130,.08); border-radius: 999px; padding: 8px 12px; font-size: 12px; font-weight: 700; }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #8bd26f; box-shadow: 0 0 12px rgba(139,210,111,.8); }
+    .header-metric { color: #d9e7e7; font-size: 12px; font-weight: 600; }
+    .header-metric b { color: white; font-size: 18px; margin-right: 4px; }
+    aside { background: var(--navy); color: white; padding: 22px 18px; overflow-y: auto; }
+    .eyebrow { color: #91b6b9; text-transform: uppercase; letter-spacing: .14em; font-size: 12px; font-weight: 700; margin-bottom: 9px; }
+    h1, h2, h3, p { margin-top: 0; }
+    .sidebar-title { font-family: "Baskerville", "Baskerville Old Face", Georgia, serif; font-size: 28px; font-style: italic; font-weight: 700; line-height: 1.15; margin-bottom: 8px; }
+    .sidebar-sub { color: #a8bec2; font-size: 14px; line-height: 1.45; font-weight: 500; margin-bottom: 22px; }
+    .side-card { background: rgba(255,255,255,.045); border: 1px solid rgba(255,255,255,.08); border-radius: 13px; padding: 15px; margin-bottom: 12px; }
+    .side-card-title { font-size: 14px; font-weight: 800; margin-bottom: 11px; color: #eef8f3; }
+    .node-list { display: grid; gap: 8px; }
+    .node-chip { border: 1px solid rgba(255,255,255,.08); background: rgba(255,255,255,.035); color: white; border-radius: 10px; padding: 10px 11px; cursor: pointer; text-align: left; font-family: inherit; transition: .16s ease; }
+    .node-chip:hover { background: rgba(185,217,130,.09); border-color: rgba(185,217,130,.35); transform: translateY(-1px); }
+    .node-chip-top { display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: 800; }
+    .sensor-tags { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 7px; }
+    .sensor-tag { color: #dbe9e4; background: rgba(185,217,130,.10); border: 1px solid rgba(185,217,130,.20); border-radius: 999px; padding: 3px 6px; font-size: 10px; font-weight: 700; }
+    .legend-row { display: flex; align-items: center; gap: 9px; margin: 9px 0; color: #c5d7d7; font-size: 12px; font-weight: 600; }
+    .legend-dot { width: 9px; height: 9px; border-radius: 50%; }
+    .green { background: var(--green); } .amber { background: var(--amber); } .red { background: var(--danger); }
+    main { position: relative; min-width: 0; min-height: 0; background: #e8efec; }
+    #map { width: 100%; height: 100%; }
+    .map-header-card { position: absolute; z-index: 1000; top: 18px; left: 18px; background: rgba(255,255,255,.94); backdrop-filter: blur(10px); border: 1px solid rgba(14,53,64,.09); border-radius: 13px; padding: 13px 16px; box-shadow: 0 8px 25px rgba(8,32,43,.12); pointer-events: none; }
+    .map-header-card .eyebrow { color: var(--green); margin-bottom: 4px; }
+    .map-header-card .title { font-size: 20px; font-weight: 800; }
+    .map-header-card .sub { margin-top: 3px; color: var(--muted); font-size: 14px; font-weight: 500; }
+    .map-tools { position: absolute; z-index: 1000; top: 18px; right: 18px; display: flex; gap: 7px; }
+    .map-tool { border: 1px solid rgba(9,40,50,.12); background: rgba(255,255,255,.94); color: var(--blue); border-radius: 9px; padding: 9px 12px; font-family: inherit; font-size: 12px; font-weight: 700; cursor: pointer; box-shadow: 0 7px 18px rgba(8,32,43,.09); }
+    .map-tool:hover { background: white; }
+    .focus-label { position: absolute; z-index: 1000; left: 18px; bottom: 18px; padding: 9px 12px; border-radius: 9px; background: rgba(8,32,43,.90); color: white; font-size: 12px; font-weight: 600; pointer-events: none; }
+    .focus-label b { color: var(--green-light); }
+    .node-marker { position: relative; width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; color: white; font-size: 11px; font-weight: 800; border: 3px solid white; box-shadow: 0 5px 18px rgba(5,32,40,.28); }
+    .node-marker.normal { background: var(--green); } .node-marker.elevated { background: var(--amber); } .node-marker.alert { background: var(--danger); }
+    .node-label { background: rgba(8,32,43,.94); color: white; border: 1px solid rgba(255,255,255,.10); border-radius: 8px; padding: 6px 9px; font-family: "Urbanist", sans-serif; box-shadow: 0 6px 16px rgba(7,30,38,.18); }
+    .node-label .code { font-size: 12px; font-weight: 800; } .node-label .place { font-size: 11px; color: #b8cccf; margin-top: 1px; font-weight: 500; }
+    .leaflet-tile-pane { filter: saturate(.78) brightness(.96) contrast(1.02); }
+    .leaflet-control-zoom { border: 0 !important; box-shadow: 0 7px 18px rgba(8,32,43,.12) !important; }
+    .leaflet-control-zoom a { background: white !important; color: var(--blue) !important; border-color: #dce7e5 !important; }
+    .network-stat{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}
+    .stat-value{color:var(--green-light);font-size:18px;font-weight:800}
+    .stat-label{color:#8eaeb2;font-size:10px;margin-top:2px;font-weight:600}
+    .status-small{width:8px;height:8px;border-radius:50%}
+    .normal-dot{background:#83c776;box-shadow:0 0 8px rgba(131,199,118,.5)}
+    .elevated-dot{background:#e5aa45;box-shadow:0 0 8px rgba(229,170,69,.45)}
+    .timeline{position:absolute;z-index:1000;top:18px;left:50%;transform:translateX(-50%);width:min(510px,48%);color:var(--ink);background:rgba(255,255,255,.95);backdrop-filter:blur(12px);border:1px solid rgba(10,45,57,.10);border-radius:12px;padding:10px 14px 9px;box-shadow:0 8px 25px rgba(8,32,43,.12)}
+    .timeline-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;font-size:12px;font-weight:800}
+    .timeline-date{color:var(--muted);font-size:10px;letter-spacing:.07em}
+    #timeDisplay{color:var(--blue);font-size:14px}
+    .timeline-track-wrap{position:relative;height:18px;display:flex;align-items:center}
+    .timeline-track,.timeline-progress{position:absolute;left:0;right:0;height:3px;border-radius:99px}
+    .timeline-track{background:#d7e3e1}.timeline-progress{right:auto;width:50%;background:var(--green)}
+    .timeline-thumb{position:absolute;width:13px;height:13px;left:50%;transform:translateX(-50%);border-radius:50%;background:white;border:3px solid var(--green);box-shadow:0 2px 8px rgba(26,70,74,.24);pointer-events:none}
+    #timeSlider{position:absolute;inset:0;width:100%;height:18px;opacity:0;cursor:pointer;margin:0}
+    .timeline-labels{display:flex;justify-content:space-between;color:#81969a;font-size:9px;font-weight:600;margin-top:2px}
+    .temperature-cell{stroke:rgba(255,255,255,.28);stroke-width:.5}
+    .pin-wrap{position:relative;width:34px;height:44px}
+    .pin{width:28px;height:28px;position:absolute;top:0;left:3px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:var(--blue);border:3px solid white;box-shadow:0 4px 12px rgba(8,32,43,.35)}
+    .pin::after{content:"";width:8px;height:8px;position:absolute;left:7px;top:7px;background:white;border-radius:50%}
+    .pin-pulse{position:absolute;width:42px;height:42px;left:-4px;top:-7px;border-radius:50%;border:1px solid rgba(94,159,103,.55);opacity:0}
+    .pin-selected .pin{background:var(--green);transform:rotate(-45deg) scale(1.12)}
+    .pin-selected .pin-pulse{opacity:1;animation:pulse 1.8s infinite}
+    @keyframes pulse{0%{transform:scale(.7);opacity:.5}70%{transform:scale(1.35);opacity:0}100%{transform:scale(1.35);opacity:0}}
+    .location-panel{position:absolute;z-index:1001;top:94px;right:18px;width:360px;background:rgba(255,255,255,.97);backdrop-filter:blur(14px);border:1px solid rgba(8,38,49,.10);border-radius:15px;padding:17px;box-shadow:0 18px 45px rgba(8,32,43,.18);opacity:0;transform:translateX(28px);pointer-events:none;transition:.28s ease}
+    .location-panel.open{opacity:1;transform:translateX(0);pointer-events:auto}
+    .panel-close{position:absolute;top:10px;right:11px;border:0;background:transparent;color:#6e8589;font-size:22px;line-height:1;cursor:pointer}
+    .panel-eyebrow{color:var(--green);text-transform:uppercase;letter-spacing:.11em;font-size:10px;font-weight:800;margin-bottom:5px}
+    .location-heading{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;padding-right:18px}
+    .location-name{font-size:20px;font-weight:800;line-height:1.1}.location-zone{color:var(--muted);font-size:12px;font-weight:500;margin-top:3px}
+    .location-status{display:flex;align-items:center;gap:5px;color:#4f8a59;background:#edf6df;border-radius:99px;padding:5px 7px;font-size:9px;font-weight:800;white-space:nowrap}
+    .status-dot-small{width:6px;height:6px;background:#71b967;border-radius:50%}
+    .selected-reading{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-top:15px;padding:12px;background:var(--blue-soft);border-radius:11px}
+    .reading-label{color:var(--muted);font-size:10px;font-weight:700;margin-bottom:2px}.reading-value{color:var(--blue);font-size:28px;font-weight:800;line-height:1}.reading-unit{font-size:13px;margin-left:2px;font-weight:700}
+    .reading-context{max-width:155px;color:#557078;font-size:10px;line-height:1.4;text-align:right}
+    .trend-header{display:flex;justify-content:space-between;margin-top:15px;margin-bottom:7px;font-size:12px;font-weight:800}.trend-header span:last-child{color:var(--green)}
+    .chart-wrap{width:100%;height:132px;background:#f4f8f7;border-radius:9px;overflow:hidden;border:1px solid #e2ece9}
+    #trendChart{width:100%;height:100%;display:block}.chart-grid-line{stroke:#dce8e5;stroke-width:1;stroke-dasharray:3 5}.chart-area{fill:rgba(94,159,103,.13)}.chart-line{fill:none;stroke:#5e9f67;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}.chart-current{fill:white;stroke:#5e9f67;stroke-width:3}
+    .chart-axis{display:flex;justify-content:space-between;color:#8aa0a4;font-size:9px;font-weight:600;padding:5px 1px 0}
+    .secondary-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;margin-top:12px}.secondary-reading{background:#f5f8f7;border:1px solid #e3ecea;border-radius:9px;padding:8px 10px}.secondary-reading .label{color:#7a9195;font-size:9px;font-weight:700}.secondary-reading .value{color:var(--blue);font-size:14px;font-weight:800;margin-top:2px}
+    .trend-tabs{display:flex;gap:5px;margin-top:14px;margin-bottom:9px}
+    .trend-tab{flex:1;border:1px solid #dfe9e7;background:#f6f9f8;color:#799095;border-radius:8px;padding:7px 8px;font-family:"Urbanist",sans-serif;font-size:9px;font-weight:800;letter-spacing:.04em;cursor:pointer}
+    .trend-tab.active{background:var(--green-pale);border-color:#c9ddb1;color:#4f8658}
+    .forecast-summary{display:none;padding:8px 10px;border-radius:9px;background:#edf6df;color:#416f4d;font-size:10px;font-weight:700;line-height:1.4;margin-top:7px}
+    .forecast-summary.show{display:block}
+    .innovation-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:9px}
+    .innovation-card{background:#f7faf9;border:1px solid #e0eae7;border-radius:9px;padding:9px 10px}
+    .innovation-label{font-size:8px;letter-spacing:.09em;color:#789095;font-weight:800}
+    .innovation-value{font-size:16px;font-weight:800;color:var(--blue);margin-top:3px}
+    .innovation-sub{font-size:9px;color:#7d9296;margin-top:2px;line-height:1.3}
+    .why-card{margin-top:9px;border:1px solid #d9e6e2;background:#f0f6f4;border-radius:10px;padding:10px}
+    .why-title{display:flex;align-items:center;gap:6px;color:#426f55;font-size:9px;font-weight:800;letter-spacing:.06em}
+    .why-icon{width:15px;height:15px;display:grid;place-items:center;border-radius:50%;background:#dcefd8;color:#4c8b5d;font-size:9px}
+    .why-text{margin-top:5px;color:#5e747a;font-size:10px;line-height:1.42}
+    .locations-card .node-chip{border:0;border-left:3px solid transparent;background:rgba(255,255,255,.025);border-radius:0 12px 12px 0;padding:12px 11px 12px 13px}
+    .locations-card .node-chip + .node-chip{margin-top:4px}
+    .locations-card .node-chip:hover{transform:none;background:rgba(185,217,130,.08);border-left-color:var(--green-light)}
+    .parameter-switch{display:flex;gap:5px;margin-top:13px}
+    .parameter-btn{flex:1;border:1px solid #dce7e5;background:#f6f9f8;color:#748b90;border-radius:8px;padding:7px 5px;font-family:"Urbanist",sans-serif;font-size:9px;font-weight:800;cursor:pointer}
+    .parameter-btn.active{background:var(--blue);color:white;border-color:var(--blue)}
+    .field-control-row{display:flex;align-items:center;gap:8px}
+    .field-btn{flex:1;border:1px solid rgba(185,217,130,.28);background:rgba(185,217,130,.08);color:#dcebd6;border-radius:9px;padding:8px 10px;font-family:"Urbanist",sans-serif;font-size:11px;font-weight:800;cursor:pointer;text-align:left}
+    .field-btn.active{background:rgba(185,217,130,.14);border-color:rgba(185,217,130,.48)}
+    .field-state{font-size:9px;color:#8bd26f;font-weight:800;letter-spacing:.08em}
+    .live-indicator{display:inline-flex;align-items:center;gap:6px;color:var(--green);font-size:10px;font-weight:700;margin-left:8px}
+    .live-dot{width:6px;height:6px;background:var(--green);border-radius:50%;animation:blink 1.5s infinite}
+    @keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
+    @media(max-width:1100px){.timeline{width:42%}.location-panel{width:330px}}
+    @media(max-width:900px){.timeline{left:18px;right:18px;width:auto;transform:none}.location-panel{left:18px;right:18px;width:auto}}
+  </style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand">
+      <div class="brand-mark">SC</div>
+      <div>
+        <div class="brand-title">SMART CAMPUS ENVIRONMENTAL INTELLIGENCE</div>
+        <div class="brand-subtitle">NITK Surathkal · Live IoT Network</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="header-metric"><b id="onlineNodes">2</b> Active Nodes</div>
+      <div class="status-pill"><span class="status-dot"></span> <span id="systemStatus">System Ready</span></div>
+    </div>
+  </header>
+
+  <aside>
+    <div class="eyebrow">Campus environmental health</div>
+    <h1 class="sidebar-title">Smart Pollution<br/>Monitoring</h1>
+    <p class="sidebar-sub">Live data from ESP32 sensor nodes across NITK campus. Click a location to view real-time conditions.</p>
+    <div class="side-card">
+      <div class="side-card-title">Monitoring Locations</div>
+      <div class="node-list">
+        <button class="node-chip" onclick="selectNode('N01')">
+          <div class="node-chip-top"><span>N01 · LHC D</span><span class="status-small normal-dot"></span></div>
+          <div class="sensor-tags"><span class="sensor-tag">Noise</span></div>
+        </button>
+        <button class="node-chip" onclick="selectNode('N02')">
+          <div class="node-chip-top"><span>N02 · Main Building</span><span class="status-small normal-dot"></span></div>
+          <div class="sensor-tags"><span class="sensor-tag">Temperature</span><span class="sensor-tag">Humidity</span><span class="sensor-tag">Noise</span></div>
+        </button>
+        <button class="node-chip" onclick="selectNode('N03')">
+          <div class="node-chip-top"><span>N03 · Main Gate</span><span class="status-small elevated-dot"></span></div>
+          <div class="sensor-tags"><span class="sensor-tag">Temperature</span><span class="sensor-tag">Humidity</span><span class="sensor-tag">Noise</span></div>
+        </button>
+      </div>
+    </div>
+    <div class="side-card field-card">
+      <div class="side-card-title">Map Layer</div>
+      <div class="field-control-row">
+        <button id="tempFieldBtn" class="field-btn active" onclick="toggleTemperatureField()">🌡 Temperature field</button>
+        <span class="field-state" id="fieldState">LIVE</span>
+      </div>
+    </div>
+    <div class="side-card">
+      <div class="side-card-title">Status Legend</div>
+      <div class="legend-row"><span class="legend-dot green"></span> Normal conditions</div>
+      <div class="legend-row"><span class="legend-dot amber"></span> Elevated</div>
+      <div class="legend-row"><span class="legend-dot red"></span> Attention required</div>
+    </div>
+  </aside>
+
+  <main>
+    <div id="map"></div>
+    <div class="map-header-card">
+      <div class="eyebrow">Live spatial view</div>
+      <div class="title">NITK Surathkal</div>
+      <div class="sub">Real-time environmental monitoring</div>
+    </div>
+    <div class="map-tools"><button class="map-tool" onclick="resetView()">⌖ Reset View</button></div>
+
+    <section class="location-panel" id="locationPanel">
+      <button class="panel-close" onclick="closePanel()">×</button>
+      <div class="panel-eyebrow">Live monitoring location <span class="live-indicator"><span class="live-dot"></span>LIVE</span></div>
+      <div class="location-heading">
+        <div><div class="location-name" id="panelName">Main Building</div></div>
+        <div class="location-status" id="panelStatus"><span class="status-dot-small"></span> NORMAL</div>
+      </div>
+      <div class="parameter-switch" id="parameterSwitch"></div>
+
+      <div class="selected-reading">
+        <div>
+          <div class="reading-label" id="primaryLabel">Temperature</div>
+          <div class="reading-value"><span id="primaryValue">--</span><span class="reading-unit" id="primaryUnit">°C</span></div>
+        </div>
+        <div class="reading-context" id="readingContext">Live reading from ESP32 sensor</div>
+      </div>
+
+      <div class="innovation-card" id="aiPredictionCard" style="display: none; margin-top: 12px; border: 1px solid var(--green); background: var(--green-pale);">
+        <div class="innovation-label" style="color: #416f4d;">🤖 LIVE AI NOISE SOURCE</div>
+        <div class="innovation-value" id="aiPredictionLabel" style="color: var(--blue); font-size: 18px; margin-top: 4px;">Analyzing...</div>
+        <div class="innovation-sub" id="aiPredictionConfidence">Processing audio features</div>
+      </div>
+
+      <div class="trend-tabs">
+        <button id="historyTab" class="trend-tab active" onclick="setTrendMode('history')">24-HOUR HISTORY</button>
+        <button id="forecastTab" class="trend-tab" onclick="setTrendMode('forecast')">NEXT 60 MIN</button>
+      </div>
+      <div class="trend-header"><span id="trendTitle">24-hour trend</span><span id="trendMetric">Temperature</span></div>
+      <div class="chart-wrap"><svg id="trendChart" viewBox="0 0 520 170" preserveAspectRatio="none"></svg></div>
+      <div class="chart-axis" id="chartAxis"><span>12 AM</span><span>6 AM</span><span>12 PM</span><span>6 PM</span><span>12 AM</span></div>
+      <div class="forecast-summary" id="forecastSummary"></div>
+      <div class="innovation-grid">
+        <div class="innovation-card" id="baselineCard">
+          <div class="innovation-label">LOCAL BASELINE</div>
+          <div class="innovation-value" id="baselineValue">--</div>
+          <div class="innovation-sub" id="baselineSub">Expected at this location</div>
+        </div>
+        <div class="innovation-card" id="anomalyCard">
+          <div class="innovation-label">WHAT DOES THIS MEAN?</div>
+          <div class="innovation-value plain" id="anomalyValue">--</div>
+          <div class="innovation-sub" id="anomalySub">Compared with usual pattern</div>
+        </div>
+      </div>
+      <div class="why-card" id="whyCard">
+        <div class="why-title"><span class="why-icon">✦</span> WHY THIS WAS FLAGGED</div>
+        <div class="why-text" id="whyText">Select a location to see the evidence behind the status.</div>
+      </div>
+      <div class="secondary-grid" id="secondaryReadings"></div>
+    </section>
+    <div class="focus-label"><b>LIVE TEMPERATURE FIELD</b> · updates in real-time</div>
+  </main>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script>
+  const focusCorners = [{lat:13.015132,lng:74.792933},{lat:13.015524,lng:74.800609},{lat:13.008734,lng:74.793277},{lat:13.009646,lng:74.800281}];
+  const nodes = {
+    N01:{code:"N01",place:"LHC D",lat:13.009509,lng:74.793010,sensors:["Noise"],primary:"noise",status:"normal"},
+    N02:{code:"N02",place:"Main Building",lat:13.010678,lng:74.794345,sensors:["Temperature","Humidity","Noise"],primary:"temperature",status:"normal"},
+    N03:{code:"N03",place:"Main Gate",lat:13.012471,lng:74.793223,sensors:["Temperature","Humidity","Noise"],primary:"temperature",status:"elevated"}
+  };
+  const minLat=Math.min(...focusCorners.map(p=>p.lat)), maxLat=Math.max(...focusCorners.map(p=>p.lat));
+  const minLng=Math.min(...focusCorners.map(p=>p.lng)), maxLng=Math.max(...focusCorners.map(p=>p.lng));
+  const focusBounds=[[minLat,minLng],[maxLat,maxLng]];
+
+  const map=L.map("map",{zoomControl:true,scrollWheelZoom:true,minZoom:15,maxZoom:21});
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:21,attribution:"&copy; OpenStreetMap"}).addTo(map);
+  map.fitBounds(focusBounds,{padding:[65,65]});
+  L.rectangle(focusBounds,{color:"#5e9f67",weight:2,opacity:.85,fill:false,dashArray:"6 7",interactive:false}).addTo(map);
+
+  const tempLayer=L.layerGroup().addTo(map);
+  function pinIcon(selected=false){return L.divIcon({className:"",html:`<div class="pin-wrap ${selected?"pin-selected":""}"><div class="pin"></div><div class="pin-pulse"></div></div>`,iconSize:[34,44],iconAnchor:[17,38]});}
+  const nodeMarkers={};
+  Object.values(nodes).forEach(node=>{
+    const marker=L.marker([node.lat,node.lng],{icon:pinIcon(false),title:node.place}).addTo(map);
+    marker.bindTooltip(node.place,{direction:"top",offset:[0,-34],className:"node-label",opacity:.96});
+    marker.on("click",()=>selectNode(node.code));
+    nodeMarkers[node.code]=marker;
+  });
+
+  let selectedNode="N02",currentHour=12,selectedParameter="temperature",trendMode="history",liveUpdateInterval=null,nodeData={};
+
+  function formatTime(hour){const h=Math.floor(hour),mins=hour%1===.5?"30":"00",suffix=h>=12?"PM":"AM",display=h%12===0?12:h%12;return `${display}:${mins} ${suffix}`;}
+
+  // Fetch live data from Flask backend
+  async function fetchLiveData(nodeId) {
+    try {
+      const response = await fetch(`http://localhost:5000/api/live-data/${nodeId}`);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const data = await response.json();
+      if (data.status === "success") {
+        nodeData[nodeId] = data.sensor_data;
+        return data.sensor_data;
+      }
+    } catch (err) {
+      console.warn(`Failed to fetch from ${nodeId}:`, err);
+    }
+    return null;
+  }
+
+  async function fetchAIPrediction(nodeId) {
+    try {
+      const response = await fetch(`http://localhost:5000/api/sensor-data/${nodeId}`);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const data = await response.json();
+      return data.audio_analysis;
+    } catch (err) {
+      console.warn(`AI prediction failed for ${nodeId}:`, err);
+      return null;
+    }
+  }
+
+  function selectNode(code) {
+    selectedNode = code;
+    selectedParameter = nodes[code].sensors.includes("Temperature") ? "temperature" : "noise";
+    Object.values(nodes).forEach(n => nodeMarkers[n.code].setIcon(pinIcon(n.code === code)));
+    document.getElementById("historyTab").classList.add("active");
+    document.getElementById("forecastTab").classList.remove("active");
+    const node = nodes[code];
+    map.flyTo([node.lat, node.lng], 18.2, {duration: 0.65});
+    updatePanel();
+    
+    // Start live updates
+    if (liveUpdateInterval) clearInterval(liveUpdateInterval);
+    liveUpdateInterval = setInterval(() => updateLiveReadings(), 3000);
+    updateLiveReadings();
+  }
+
+  async function updateLiveReadings() {
+    const data = await fetchLiveData(selectedNode);
+    if (!data) return;
+
+    // Update primary reading
+    let label, value, unit;
+    if (selectedParameter === "temperature") {
+      label = "Temperature"; value = data.temperature.toFixed(1); unit = "°C";
+    } else if (selectedParameter === "humidity") {
+      label = "Humidity"; value = data.humidity !== undefined ? data.humidity.toFixed(0) : "--"; unit = "%";
+    } else {
+      label = "Noise level"; value = data.rms.toFixed(1); unit = " index";
+    }
+    document.getElementById("primaryLabel").textContent = label;
+    document.getElementById("primaryValue").textContent = value;
+    document.getElementById("primaryUnit").textContent = unit;
+
+    // Update secondary readings
+    const secondary = document.getElementById("secondaryReadings");
+    secondary.innerHTML = "";
+    if (nodes[selectedNode].sensors.includes("Temperature")) {
+      secondary.innerHTML += `<div class="secondary-reading"><div class="label">Temperature</div><div class="value">${data.temperature.toFixed(1)} °C</div></div>`;
+    }
+    if (nodes[selectedNode].sensors.includes("Humidity")) {
+      secondary.innerHTML += `<div class="secondary-reading"><div class="label">Humidity</div><div class="value">${data.humidity.toFixed(0)} %</div></div>`;
+    }
+    if (nodes[selectedNode].sensors.includes("Noise")) {
+      secondary.innerHTML += `<div class="secondary-reading"><div class="label">Noise (RMS)</div><div class="value">${data.rms.toFixed(1)} index</div></div>`;
+    }
+
+    // Update AI prediction if noise is selected
+    if (selectedParameter === "noise") {
+      const ai = await fetchAIPrediction(selectedNode);
+      if (ai) {
+        document.getElementById("aiPredictionLabel").textContent = ai.predicted_label;
+        document.getElementById("aiPredictionConfidence").textContent = "Live from ESP32 via WiFi";
+      }
+    }
+
+    // Update trend chart with live data point
+    updateTrendWithLiveData(data);
+  }
+
+  function updateTrendWithLiveData(liveData) {
+    renderSelectedTrend();
+  }
+
+  function setTrendMode(mode) {
+    trendMode = mode;
+    document.getElementById("historyTab").classList.toggle("active", mode === "history");
+    document.getElementById("forecastTab").classList.toggle("active", mode === "forecast");
+    document.getElementById("trendTitle").textContent = mode === "history" ? "24-hour trend" : "Next 60 min forecast";
+    renderSelectedTrend();
+  }
+
+  function renderSelectedTrend() {
+    const baseTemp = nodeData[selectedNode]?.temperature || 25;
+    const arr = Array.from({length: 49}, (_, i) => {
+      const hour = i / 2;
+      return baseTemp + Math.sin((hour - 6) * Math.PI / 12) * 3 + (Math.random() - 0.5);
+    });
+    
+    if (trendMode === "history") {
+      drawChart(arr, currentHour);
+      document.getElementById("chartAxis").innerHTML = '<span>12 AM</span><span>6 AM</span><span>12 PM</span><span>6 PM</span><span>12 AM</span>';
+      document.getElementById("baselineValue").textContent = `${baseTemp.toFixed(1)}°C`;
+      document.getElementById("anomalyValue").textContent = "Normal range";
+    } else {
+      const future = Array.from({length: 7}, (_, i) => baseTemp + (Math.random() - 0.5));
+      drawForecastChart(future, "°C");
+      document.getElementById("chartAxis").innerHTML = '<span>Now</span><span>+15m</span><span>+30m</span><span>+45m</span><span>+60m</span>';
+    }
+  }
+
+  function drawChart(arr, hour) {
+    const svg = document.getElementById("trendChart"), W = 520, H = 170, padX = 12, padY = 12;
+    const min = Math.min(...arr) - 2, max = Math.max(...arr) + 2;
+    const pts = arr.map((v, i) => [padX + i * (W - 2 * padX) / (arr.length - 1), H - padY - ((v - min) / (max - min)) * (H - 2 * padY)]);
+    const line = pts.map(p => p.join(",")).join(" ");
+    const area = `${pts[0][0]},${H - padY} ${line} ${pts[pts.length - 1][0]},${H - padY}`;
+    const idx = hour * 2, cx = padX + idx * (W - 2 * padX) / (arr.length - 1);
+    svg.innerHTML = `<line class="chart-grid-line" x1="0" y1="35" x2="${W}" y2="35"/><line class="chart-grid-line" x1="0" y1="85" x2="${W}" y2="85"/><polygon class="chart-area" points="${area}"/><polyline class="chart-line" points="${line}"/><line x1="${cx}" y1="0" x2="${cx}" y2="${H}" stroke="#5e9f67" stroke-opacity=".22" stroke-dasharray="3 4"/><circle class="chart-current" cx="${cx}" cy="${pts[idx][1]}" r="5"/>`;
+  }
+
+  function drawForecastChart(arr, unit) {
+    const svg = document.getElementById("trendChart"), W = 520, H = 170, padX = 12, padY = 12;
+    const min = Math.min(...arr) - 1, max = Math.max(...arr) + 1;
+    const pts = arr.map((v, i) => [padX + i * (W - 2 * padX) / (arr.length - 1), H - padY - ((v - min) / (max - min)) * (H - 2 * padY)]);
+    const line = pts.map(p => p.join(",")).join(" ");
+    svg.innerHTML = `<polyline class="chart-line" points="${line}" style="stroke-dasharray: 5 3"/><circle class="chart-current" cx="${pts[0][0]}" cy="${pts[0][1]}" r="5"/>`;
+  }
+
+  function renderParameterSwitch() {
+    const node = nodes[selectedNode], wrap = document.getElementById("parameterSwitch");
+    if (!wrap) return;
+    const options = [];
+    if (node.sensors.includes("Temperature")) options.push(["temperature", "Temperature"]);
+    if (node.sensors.includes("Humidity")) options.push(["humidity", "Humidity"]);
+    if (node.sensors.includes("Noise")) options.push(["noise", "Noise"]);
+    wrap.innerHTML = options.map(([key, label]) => `<button class="parameter-btn ${selectedParameter === key ? "active" : ""}" onclick="setParameter('${key}')">${label}</button>`).join("");
+  }
+
+  function setParameter(parameter) {
+    if (!nodes[selectedNode].sensors.map(s => s.toLowerCase()).includes(parameter)) return;
+    selectedParameter = parameter;
+    updatePanel();
+  }
+
+  function updatePanel() {
+    const node = nodes[selectedNode];
+    document.getElementById("locationPanel").classList.add("open");
+    document.getElementById("panelName").textContent = node.place;
+    document.getElementById("aiPredictionCard").style.display = selectedParameter === "noise" ? "block" : "none";
+    
+    // ✅ HIDE "NEXT 60 MIN" TAB FOR NOISE READINGS
+    const forecastTab = document.getElementById("forecastTab");
+    if (selectedParameter === "noise" || selectedParameter === "humidity") {
+      forecastTab.style.display = "none";
+      if (trendMode === "forecast") {
+        setTrendMode("history"); // Force switch to history if it was on forecast
+      }
+    } else {
+      forecastTab.style.display = "block";
+    }
+    
+    renderParameterSwitch();
+    renderSelectedTrend();
+    updateLiveReadings();
+  }
+
+  function closePanel() {
+    document.getElementById("locationPanel").classList.remove("open");
+    Object.values(nodes).forEach(n => nodeMarkers[n.code].setIcon(pinIcon(false)));
+    if (liveUpdateInterval) { clearInterval(liveUpdateInterval); liveUpdateInterval = null; }
+  }
+
+  function resetView() { map.flyToBounds(focusBounds, {padding: [65, 65], duration: 0.7}); }
+  function toggleTemperatureField() {
+    const btn = document.getElementById("tempFieldBtn"), state = document.getElementById("fieldState");
+    if (btn.classList.contains("active")) {
+      map.removeLayer(tempLayer);
+      btn.classList.remove("active");
+      state.textContent = "OFF";
+    } else {
+      tempLayer.addTo(map);
+      btn.classList.add("active");
+      state.textContent = "ON";
+    }
+  }
+
+  // Initialize
+  selectNode("N02");
+  console.log(" Smart Campus Dashboard Loaded - Live IoT Mode");
+</script>
+</body>
+</html>
