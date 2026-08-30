@@ -5,12 +5,12 @@ A low-cost **IoT-based environmental monitoring system** built using **ESP32**, 
 
 ## Key Features
 
-* 🎙️ **Real-time noise monitoring** using audio sensors
-* 🌡️ **Temperature monitoring** using temperature sensors
-* 📡 **Wireless communication** between ESP32 nodes
-* 📊 Centralized data collection and visualization
-* ⚡ Low-cost and scalable architecture
-* 🔍 Helps identify environmental changes and abnormal conditions
+*  **Real-time noise monitoring** using audio sensors
+*  **Temperature monitoring** using temperature sensors
+*  **Wireless communication** between ESP32 nodes
+*  Centralized data collection and visualization
+*  Low-cost and scalable architecture
+*  Helps identify environmental changes and abnormal conditions
 
 
 ## Hardware Used
